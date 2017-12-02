@@ -13,12 +13,26 @@ fn main() {
   part1_spreadsheet_file.read_to_string(&mut part1_spreadsheet).expect("Something went wrong reading part1 file");
 
   println!("Part1: {}", part1(part1_spreadsheet));
+
+  // there is almost certainly a better way to do this, but this is quick and easy for this purpose
+  // avoides the use-after-move thing
+  let mut part1_spreadsheet_file = File::open("data/day2/input").expect("file not found");
+  let mut part1_spreadsheet = String::new();
+  part1_spreadsheet_file.read_to_string(&mut part1_spreadsheet).expect("Something went wrong reading part1 file");
+
+  println!("Part2: {}", part2(part1_spreadsheet));
 }
 
 fn part1(input: String) -> i32 {
   let sheet = Spreadsheet::new(input);
 
   return sheet.part1();
+}
+
+fn part2(input: String) -> i32 {
+  let sheet = Spreadsheet::new(input);
+
+  return sheet.part2();
 }
 
 
@@ -40,6 +54,14 @@ impl Spreadsheet {
     let mut sum = 0;
     for row in &self.rows {
       sum += row.part1();
+    }
+    return sum;
+  }
+
+  pub fn part2(&self) -> i32 {
+    let mut sum = 0;
+    for row in &self.rows {
+      sum += row.part2();
     }
     return sum;
   }
@@ -100,6 +122,7 @@ impl SheetRow {
         let i_data = &self.cells[i].data;
         let j_data = &self.cells[j].data;
         if i_data % j_data == 0 && i != j {
+          println!("{} % {}", i_data, j_data);
           return i_data / j_data;
         }
       }
@@ -335,5 +358,14 @@ mod advent_example_tests {
     test_file.read_to_string(&mut test_content).expect("Something went wrong reading part1 file");
 
     assert!(part1(test_content) == 18);
+  }
+
+  #[test]
+  fn test_part2_ex1() {
+    let mut test_file = File::open("data/day2/tests/part2_ex1").expect("file not found");
+    let mut test_content = String::new();
+    test_file.read_to_string(&mut test_content).expect("Something went wrong reading part2 file");
+
+    assert!(part2(test_content) == 9);
   }
 }
