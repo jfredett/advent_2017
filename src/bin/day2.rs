@@ -122,7 +122,6 @@ impl SheetRow {
         let i_data = &self.cells[i].data;
         let j_data = &self.cells[j].data;
         if i_data % j_data == 0 && i != j {
-          println!("{} % {}", i_data, j_data);
           return i_data / j_data;
         }
       }
