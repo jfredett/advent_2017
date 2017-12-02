@@ -8,12 +8,12 @@ fn main() {
   println!("Captcha: http://adventofcode.com/2017/day/1");
   println!("");
 
-  let mut part1_captcha_file = File::open("day1_part1_input").expect("file not found");
+  let mut part1_captcha_file = File::open("data/day1/part1_input").expect("file not found");
   let mut part1_captcha = String::new();
   part1_captcha_file.read_to_string(&mut part1_captcha).expect("Something went wrong reading part1 file");
 
   // it doesn't actually change, but this avoids the use-after-move issue
-  let mut part2_captcha_file = File::open("day1_part1_input").expect("file not found");
+  let mut part2_captcha_file = File::open("data/day1/part1_input").expect("file not found");
   let mut part2_captcha = String::new();
   part2_captcha_file.read_to_string(&mut part2_captcha).expect("Something went wrong reading part2 file");
 
