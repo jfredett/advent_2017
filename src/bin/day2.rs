@@ -3,7 +3,7 @@ use std::io::prelude::*;
 use std::ops::Index;
 
 fn main() {
-  println!("Advent of Code Day 1");
+  println!("Advent of Code Day 2");
   println!("");
   println!("Spreadsheet: http://adventofcode.com/2017/day/2");
   println!("");
