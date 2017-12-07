@@ -16,11 +16,11 @@ fn main() {
 }
 
 fn part1(input: &String) -> i32 {
-  return Machine::new(input.to_owned(), Mode::Part1).run();
+  return Machine::new(input.to_owned(), Mode::Part1, false).run();
 }
 
 fn part2(input: &String) -> i32 {
-  return Machine::new(input.to_owned(), Mode::Part2).run();
+  return Machine::new(input.to_owned(), Mode::Part2, false).run();
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -35,12 +35,20 @@ struct Machine {
   code: Vec<i32>,
   pointer: i32,
   steps: i32,
-  mode: Mode
+  mode: Mode,
+  debug: bool
 }
 
 impl Machine {
-  pub fn new(input: String, mode: Mode) -> Machine {
-    return Machine { source: input, code: vec![], steps: 0, pointer: 0, mode: mode };
+  pub fn new(input: String, mode: Mode, debug: bool) -> Machine {
+    return Machine {
+      source: input,
+      code: vec![],
+      steps: 0,
+      pointer: 0,
+      mode: mode,
+      debug: debug
+    };
   }
 
   pub fn reboot(&mut self) {
@@ -49,9 +57,20 @@ impl Machine {
     self.steps = 0;
   }
 
+  pub fn display(&self) {
+    println!("----");
+    for inst in self.code.to_owned() {
+      println!("{}", inst);
+    }
+    println!("----");
+  }
+
   pub fn run(&mut self) -> i32 {
     self.reboot();
     while self.in_bounds() {
+      if self.debug {
+        self.display()
+      }
       self.step();
     }
     return self.steps;
@@ -110,7 +129,7 @@ fn part1_test() {
   let mut content = String::new();
   file.read_to_string(&mut content).expect("Something went wrong reading test file");
 
-  assert_eq!(Machine::new(content, Mode::Part1).run(), 5);
+  assert_eq!(Machine::new(content, Mode::Part1, true).run(), 5);
 }
 
 #[test]
@@ -119,5 +138,5 @@ fn part2_test() {
   let mut content = String::new();
   file.read_to_string(&mut content).expect("Something went wrong reading test file");
 
-  assert_eq!(Machine::new(content, Mode::Part2).run(), 10);
+  assert_eq!(Machine::new(content, Mode::Part2, false).run(), 10);
 }
