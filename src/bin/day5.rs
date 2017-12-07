@@ -12,25 +12,35 @@ fn main() {
   file.read_to_string(&mut content).expect("Something went wrong reading input file");
 
   println!("Part1: {}", part1(&content));
-  //println!("Part2: {}", part2(&content));
+  println!("Part2: {}", part2(&content));
 }
 
 fn part1(input: &String) -> i32 {
-  return Machine::new(input.to_owned()).run();
+  return Machine::new(input.to_owned(), Mode::Part1).run();
 }
 
+fn part2(input: &String) -> i32 {
+  return Machine::new(input.to_owned(), Mode::Part2).run();
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum Mode {
+  Part1,
+  Part2
+}
 
 #[derive(Debug, PartialEq, Eq)]
 struct Machine {
   source: String,
   code: Vec<i32>,
   pointer: i32,
-  steps: i32
+  steps: i32,
+  mode: Mode
 }
 
 impl Machine {
-  pub fn new(input: String) -> Machine {
-    return Machine { source: input, code: vec![], steps: 0, pointer: 0 };
+  pub fn new(input: String, mode: Mode) -> Machine {
+    return Machine { source: input, code: vec![], steps: 0, pointer: 0, mode: mode };
   }
 
   pub fn reboot(&mut self) {
@@ -61,9 +71,23 @@ impl Machine {
     let previous = self.pointer;
 
     self.pointer += self.current_instruction();
-    self.code[previous as usize] += 1;
+    self.update_instruction(previous);
 
     self.steps += 1
+  }
+
+  fn update_instruction(&mut self, ptr: i32) {
+    match self.mode {
+      Mode::Part1 => self.code[ptr as usize] += 1,
+      Mode::Part2 => {
+        let instruction = self.code[ptr as usize];
+        if instruction >= 3 {
+          self.code[ptr as usize] -= 1;
+        } else {
+          self.code[ptr as usize] += 1;
+        }
+      }
+    }
   }
 
 
@@ -86,5 +110,14 @@ fn part1_test() {
   let mut content = String::new();
   file.read_to_string(&mut content).expect("Something went wrong reading test file");
 
-  assert_eq!(Machine::new(content).run(), 5);
+  assert_eq!(Machine::new(content, Mode::Part1).run(), 5);
+}
+
+#[test]
+fn part2_test() {
+  let mut file = File::open("data/day5/test").expect("file not found");
+  let mut content = String::new();
+  file.read_to_string(&mut content).expect("Something went wrong reading test file");
+
+  assert_eq!(Machine::new(content, Mode::Part2).run(), 10);
 }
