@@ -13,11 +13,15 @@ fn main() {
   file.read_to_string(&mut content).expect("Something went wrong reading input file");
 
   println!("Part 1: {}", part1(&content));
-  //println!("Part 2: {}", part2(&content));
+  println!("Part 2: {}", part2(&content));
 }
 
 fn part1(input: &String) -> i32 {
   return MemoryBank::new(input, Mode::Part1).run();
+}
+
+fn part2(input: &String) -> i32 {
+  return MemoryBank::new(input, Mode::Part2).run();
 }
 
 
@@ -52,13 +56,24 @@ impl MemoryBank {
   pub fn run(&mut self) -> i32 {
     self.reboot();
 
+    self.execution_loop();
+
+    if self.mode == Mode::Part2 {
+      self.steps = 0;        // reset to count the total steps in the loop
+      self.clear_history();   // wipe history
+      self.record_history();  // but populate it with state so we fail quick
+      self.execution_loop();  // rerun
+    }
+
+    return self.steps
+  }
+
+  fn execution_loop(&mut self) {
     while !self.loop_found {
       self.step();
       self.steps += 1;
       self.record_history();
     }
-
-    return self.steps
   }
 
   fn step(&mut self) {
@@ -102,10 +117,14 @@ impl MemoryBank {
 
   fn reboot(&mut self) {
     self.blocks = vec![];
-    self.history.clear();
+    self.clear_history();
     self.steps = 0;
     self.loop_found = false;
     self.parse_source();
+  }
+
+  fn clear_history(&mut self) {
+    self.history.clear();
   }
 
   fn parse_source(&mut self) {
@@ -129,11 +148,11 @@ fn part1_test() {
   assert_eq!(MemoryBank::new(&content, Mode::Part1).run(), 5);
 }
 
-//#[test]
-//fn part2_test() {
-  //let mut file = File::open("data/day5/test").expect("file not found");
-  //let mut content = String::new();
-  //file.read_to_string(&mut content).expect("Something went wrong reading test file");
+#[test]
+fn part2_test() {
+  let mut file = File::open("data/day5/test").expect("file not found");
+  let mut content = String::new();
+  file.read_to_string(&mut content).expect("Something went wrong reading test file");
 
-  //assert_eq!(Machine::new(content, Mode::Part2, false).run(), 10);
-//}
+  assert_eq!(MemoryBank::new(&content, Mode::Part2).run(), 4);
+}
