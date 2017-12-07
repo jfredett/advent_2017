@@ -74,7 +74,7 @@ fn main() {
      this is equal to the difference is a coincidence, I believe.
 
   */ /////////////////////////////////////////////////////////
-  println!("Part1: 371");
+  println!("Part 1: 371");
   /* /////////////////////////////////////////////////////////
 
      Part 2 is a little tougher. We need to distill that weird function into
@@ -141,180 +141,382 @@ fn main() {
      right `2n` before incrementing `n` and repeating. The natural datastructure
      here is a sparse matrix.
 
-     Another approach (and the one I use) is to work out the conversion I detail
-     above so you can convert a 'spiral' index directly to a point, with (0,0)
-     at the origin.
-
   */ /////////////////////////////////////////////////////////
+  //println!("Part 2: {}", SparseMatrix::new().part2());
+  println!();
+
+  let mut sm = SparseMatrix::new();
+
+  println!("Part 2: Spiral 4x4");
+  sm.dump(4);
+  println!("Just read it off this chart");
 }
 
 
-mod day3 {
-  use std::collections::HashMap;
+use std::fmt;
+use std::collections::HashMap;
 
-  #[derive(Debug, PartialEq, Eq, Hash)]
-  struct Point {
-    x: i32,
-    y: i32
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
+struct Point {
+  x: i64,
+  y: i64
+}
+
+impl Point {
+  pub fn new(x: i64, y: i64) -> Point {
+    return Point { x: x, y: y };
   }
 
-  impl Point {
-    pub fn new(x: i32, y: i32) -> Point {
-      return Point { x: x, y: y };
-    }
-  }
+  pub fn neighborhood(&self, size: i64) -> Vec<Point> {
+    let mut result = vec![];
 
-  #[derive(Debug, PartialEq, Eq)]
-  struct SparseMatrix {
-    pointer: Point,
-    coordinates: HashMap<Point, i32>
-  }
-
-  impl SparseMatrix {
-    pub fn new() -> SparseMatrix {
-      let mut sm = SparseMatrix { 
-        pointer: Point::new(0,0),
-        coordinates: HashMap::new()
-      };
-
-      sm.set(Point::new(0,0), 1);
-
-      return sm;
-    }
-
-    pub fn set(&mut self, p: Point, v: i32) {
-      self.coordinates.insert(p,v);
-    }
-
-    pub fn get(&self, p: Point) -> i32 {
-      match self.coordinates.get(&p) {
-        Some(v) => return *v,
-        None => return 0
+    // for loops aren't inclusive... weird.
+    for i in (-size)..(size+1) {
+      for j in (-size)..(size+1) {
+        if i != 0 || j != 0 {
+          result.push(Point::new(self.x + i, self.y + j));
+        }
       }
     }
 
-    pub fn spiral_to_point(idx: i32) -> Point {
-      // the ring in which the index resides
-      let mut ring = (idx as f32).sqrt().ceil() as i32;
-      // we want the perfect square on the down-left diagonal
-      if ring % 2 == 0 { ring += 1; }
+    return result;
+  }
+}
 
-      let n = (ring - 1) / 2; // this is the index of the ring, we'll need it later
+impl fmt::Display for Point {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    write!(f, "({}, {})", self.x, self.y)
+  }
+}
 
-      let x: i32;
-      let y: i32;
+impl fmt::Debug for Point {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    write!(f, "({}, {})", self.x, self.y)
+  }
+}
 
-      let bottom_left_corner = (2*n + 1).pow(2) - 2*n;
-      let top_left_corner = (2*n - 1).pow(2) + 4*n;
-      let top_right_corner = (2*n - 1).pow(2) + 2*n;
+#[derive(PartialEq, Eq)]
+struct SparseMatrix {
+  spiral_pointer: i64,
+  coordinates: HashMap<Point, i64>
+}
 
-      if idx > bottom_left_corner {
-        let bottom_axis = (2*n + 1).pow(2) - n;
-        // if idx > center, then this is negative (and we're to the left of
-        // the y-axis, otherwise we're positive and to the right).
-        x = idx - bottom_axis;
-        // we're left the y-axis
-        y = -n;
-      } else if idx > top_left_corner {
-        let left_axis = (2*n + 1).pow(2) - 3*n;
-        // below the x axis
-        x = -n;
-        y = idx - left_axis;
-      } else if idx > top_right_corner {
-        let top_axis = (2*n - 1).pow(2) + 3*n;
-        x = top_axis - idx;
-        // we're right of the y-axis
-        y = n;
-      } else { // we're on the right bar
-        let right_axis = (2*n - 1).pow(2) + n;
-        // we're above the x-axis
-        x = n;
-        y = idx - right_axis;
+impl SparseMatrix {
+  pub fn new() -> SparseMatrix {
+    let mut sm = SparseMatrix { 
+      // indexes at 1, start at 2, we'll manually populate the origin in a
+      // moment
+      spiral_pointer: 2,
+      coordinates: HashMap::new()
+    };
+
+    sm.set(Point::new(0,0), 1);
+
+    return sm;
+  }
+
+  pub fn tip(&mut self) -> i64 {
+    let p = self.pointer();
+    return self.get(p);
+  }
+
+  pub fn set(&mut self, p: Point, v: i64) {
+    self.coordinates.insert(p,v);
+  }
+
+  pub fn dump(&mut self, size: i64) {
+    println!("---------------------------");
+    for i in -size..(size+1) {
+      for j in -size..(size+1) {
+        print!(" {:w$}", self.get(Point::new(j,-i)), w=2*size as usize);
       }
+      println!("");
+    }
+    println!("---------------------------");
+  }
 
-      return Point::new(x,y);
+  pub fn get(&mut self, p: Point) -> i64{
+    while !self.has(p) {
+      self.populate();
+    }
+    //println!("DEBUG#get: coordinates = {:?}", self.coordinates);
+    return *self.coordinates.get(&p).expect("");
+  }
 
+  pub fn has(&self, p: Point) -> bool {
+    let attempt = self.coordinates.get(&p);
+    //println!("DEBUG#has: attempt= {:?}", attempt);
+    match attempt {
+      Some(_) => return true,
+      None => return false
     }
   }
 
-  #[cfg(test)]
-  mod point_tests {
-    use super::*;
-
-    #[test]
-    fn new_happy() {
-      let p = Point::new(1,2);
-      assert_eq!(p.x, 1);
-      assert_eq!(p.y, 2);
-    }
-  }
-
-  #[cfg(test)]
-  mod sparse_matrix_tests {
-    use super::*;
-
-    #[test]
-    fn new_happy()  {
-      let sm = SparseMatrix::new();
-      assert_eq!(sm.get(Point::new(0,0)), 1);
-    }
-
-    //#[test]
-    //fn get_automatically_calculates_and_populates() {
-      //let sm = SparseMatrix::new();
-      //assert_eq(sm.get(Point::new(1,
+  // don't need this yet
+  //pub fn extent(&self) -> i64 {
+    //let p = SparseMatrix::spiral_to_point(self.spiral_pointer);
+    //if p.x.abs() > p.y.abs() {
+      //return p.x.abs();
+    //} else {
+      //return p.y.abs();
     //}
+  //}
 
-    #[test]
-    fn spiral_to_point_1() {
-      let p = SparseMatrix::spiral_to_point(5);
-      assert_eq!(p.x, -1);
-      assert_eq!(p.y, 1);
+  pub fn pointer(&self) -> Point {
+    return SparseMatrix::spiral_to_point(self.spiral_pointer);
+  }
+
+  pub fn populate(&mut self) {
+    let mut sum = 0;
+    let neighborhood = self.pointer().neighborhood(1);
+
+    for point in neighborhood {
+      if self.has(point) {
+        sum = sum + self.coordinates.get(&point).expect("");
+      }
     }
 
-    #[test]
-    fn spiral_to_point_2() {
-      let p = SparseMatrix::spiral_to_point(16);
-      assert_eq!(p.x, -1);
-      assert_eq!(p.y, 2);
+    let pointer = self.pointer();
+    self.set(pointer, sum);
+    self.spiral_pointer += 1;
+  }
+
+  pub fn spiral_to_point(idx: i64) -> Point {
+    // the ring in which the index resides
+    let mut ring = (idx as f64).sqrt().ceil() as i64;
+    // we want the perfect square on the down-left diagonal
+    if ring % 2 == 0 { ring += 1; }
+
+    let n = (ring - 1) / 2; // this is the index of the ring, we'll need it later
+
+    let x: i64 ; let y: i64;
+
+    let bottom_left_corner = (2*n + 1).pow(2) - 2*n;
+    let top_left_corner = (2*n - 1).pow(2) + 4*n;
+    let top_right_corner = (2*n - 1).pow(2) + 2*n;
+    let bottom_right_corner = (2*n -1).pow(2);
+
+    if idx > bottom_left_corner {
+      let bottom_axis = (2*n + 1).pow(2) - n;
+      // if idx > center, then this is negative (and we're to the left of
+      // the y-axis, otherwise we're positive and to the right).
+      x = idx - bottom_axis;
+      // we're left the y-axis
+      y = -n;
+    } else if idx == bottom_left_corner {
+      x = -n;
+      y = -n;
+    } else if idx > top_left_corner {
+      let left_axis = (2*n + 1).pow(2) - 3*n;
+      // below the x axis
+      x = -n;
+      y = left_axis -idx;
+    } else if idx == top_left_corner {
+      x = -n;
+      y = n;
+    } else if idx > top_right_corner {
+      let top_axis = (2*n - 1).pow(2) + 3*n;
+      x = top_axis - idx;
+      // we're right of the y-axis
+      y = n;
+    } else if idx == top_right_corner {
+      x = n;
+      y = n;
+    } else if idx == bottom_right_corner {
+      x = n;
+      y = -n;
+    } else { // we're on the right bar
+      let right_axis = (2*n - 1).pow(2) + n;
+      // we're above the x-axis
+      x = n;
+      y = idx - right_axis;
     }
 
-    #[test]
-    fn spiral_to_point_3() {
-      let p = SparseMatrix::spiral_to_point(12);
-      assert_eq!(p.x, 2);
-      assert_eq!(p.y, 1);
-    }
+    return Point::new(x,y);
 
-    #[test]
-    fn spiral_to_point_4() {
-      let p = SparseMatrix::spiral_to_point(22);
-      assert_eq!(p.x, -1);
-      assert_eq!(p.y, -2);
-    }
-
-    #[test]
-    fn spiral_to_point_5() {
-      let p = SparseMatrix::spiral_to_point(22);
-      assert_eq!(p.x, -1);
-      assert_eq!(p.y, -2);
-    }
-
-    #[test]
-    fn spiral_to_point_on_axis_1() {
-      let p = SparseMatrix::spiral_to_point(11);
-      assert_eq!(p.x, 2);
-      assert_eq!(p.y, 0);
-    }
-
-    #[test]
-    fn part1_test() {
-      // we don't need this for solving the puzzle, but it's a good test of the
-      // spiral/index conversion
-      let p = SparseMatrix::spiral_to_point(368078);
-      assert_eq!(p.x, -68);
-      assert_eq!(p.y, -303);
-    }
   }
 }
 
+#[cfg(test)]
+mod point_tests {
+  use super::*;
+
+  #[test]
+  fn new_happy() {
+    let p = Point::new(1,2);
+    assert_eq!(p.x, 1);
+    assert_eq!(p.y, 2);
+  }
+
+  #[test]
+  fn neighborhood_test_origin() {
+    let p = Point::new(0,0);
+    let p_neighborhood = p.neighborhood(1);
+
+    assert!(p_neighborhood.contains(&Point::new(1,1)));
+    assert!(p_neighborhood.contains(&Point::new(1,0)));
+    assert!(p_neighborhood.contains(&Point::new(1,-1)));
+    assert!(p_neighborhood.contains(&Point::new(0,1)));
+    assert!(p_neighborhood.contains(&Point::new(0,-1)));
+    assert!(p_neighborhood.contains(&Point::new(-1,1)));
+    assert!(p_neighborhood.contains(&Point::new(-1,0)));
+    assert!(p_neighborhood.contains(&Point::new(-1,-1)));
+
+    assert!(!p_neighborhood.contains(&p));
+  }
+
+  #[test]
+  fn neighborhood_test_affine_point() {
+    let p = Point::new(1,2);
+    let p_neighborhood = p.neighborhood(1);
+
+    assert!(p_neighborhood.contains(&Point::new(1,3)));
+    assert!(p_neighborhood.contains(&Point::new(1,1)));
+    assert!(p_neighborhood.contains(&Point::new(0,3)));
+    assert!(p_neighborhood.contains(&Point::new(0,2)));
+    assert!(p_neighborhood.contains(&Point::new(0,1)));
+    assert!(p_neighborhood.contains(&Point::new(2,3)));
+    assert!(p_neighborhood.contains(&Point::new(2,2)));
+    assert!(p_neighborhood.contains(&Point::new(2,1)));
+
+    assert!(!p_neighborhood.contains(&p));
+  }
+}
+
+#[cfg(test)]
+mod sparse_matrix_tests {
+  use super::*;
+
+  #[test]
+  fn has_positive() {
+    let mut sm = SparseMatrix::new();
+    sm.get(Point::new(0,1));
+    assert!(sm.has(Point::new(0,0)));
+    assert!(sm.has(Point::new(1,1)));
+    assert!(sm.has(Point::new(1,0)));
+    assert!(sm.has(Point::new(0,1)));
+  }
+
+  #[test]
+  fn has_negative() {
+    let sm = SparseMatrix::new();
+    assert!(!sm.has(Point::new(1,1)));
+    assert!(!sm.has(Point::new(1,0)));
+  }
+
+  #[test]
+  fn new_happy()  {
+    let mut sm = SparseMatrix::new();
+    assert_eq!(sm.get(Point::new(0,0)), 1);
+  }
+
+  #[test]
+  fn get_automatically_calculates_and_populates() {
+    let mut sm = SparseMatrix::new();
+    assert_eq!(sm.get(Point::new(2,2)), 59);
+    assert_eq!(sm.get(Point::new(1,-1)), 25);
+    assert_eq!(sm.get(Point::new(-2,2)), 147);
+    assert_eq!(sm.get(Point::new(-2,1)), 304);
+    assert_eq!(sm.get(Point::new(-2,-2)), 362);
+  }
+
+  #[test]
+  fn spiral_to_point_1() {
+    let p = SparseMatrix::spiral_to_point(5);
+    assert_eq!(p.x, -1);
+    assert_eq!(p.y, 1);
+  }
+
+  #[test]
+  fn spiral_to_point_2() {
+    let p = SparseMatrix::spiral_to_point(16);
+    assert_eq!(p.x, -1);
+    assert_eq!(p.y, 2);
+  }
+
+  #[test]
+  fn spiral_to_point_3() {
+    let p = SparseMatrix::spiral_to_point(12);
+    assert_eq!(p.x, 2);
+    assert_eq!(p.y, 1);
+  }
+
+  #[test]
+  fn spiral_to_point_4() {
+    let p = SparseMatrix::spiral_to_point(22);
+    assert_eq!(p.x, -1);
+    assert_eq!(p.y, -2);
+  }
+
+  #[test]
+  fn spiral_to_point_5() {
+    let p = SparseMatrix::spiral_to_point(22);
+    assert_eq!(p.x, -1);
+    assert_eq!(p.y, -2);
+  }
+
+  #[test]
+  fn spiral_to_point_on_axis_1() {
+    let p = SparseMatrix::spiral_to_point(11);
+    assert_eq!(p.x, 2);
+    assert_eq!(p.y, 0);
+  }
+
+  #[test]
+  fn part1_test() {
+    // we don't need this for solving the puzzle, but it's a good test of the
+    // spiral/index conversion
+    let p = SparseMatrix::spiral_to_point(368078);
+    assert_eq!(p.x, -68);
+    assert_eq!(p.y, -303);
+  }
+
+  #[test]
+  fn spiral_to_point_indexes_at_1() {
+    let p = SparseMatrix::spiral_to_point(1);
+    assert_eq!(p.x, 0);
+    assert_eq!(p.y, 0);
+  }
+
+  #[test]
+  fn spiral_to_point_generates_spiral_correctly() {
+    let p = SparseMatrix::spiral_to_point(1);
+    assert_eq!(p.x, 0); assert_eq!(p.y, 0);
+
+    let p = SparseMatrix::spiral_to_point(2);
+    assert_eq!(p.x, 1); assert_eq!(p.y, 0);
+
+    let p = SparseMatrix::spiral_to_point(3);
+    assert_eq!(p.x, 1); assert_eq!(p.y, 1);
+
+    let p = SparseMatrix::spiral_to_point(4);
+    assert_eq!(p.x, 0); assert_eq!(p.y, 1);
+
+    let p = SparseMatrix::spiral_to_point(5);
+    assert_eq!(p.x, -1); assert_eq!(p.y, 1);
+
+    let p = SparseMatrix::spiral_to_point(6);
+    assert_eq!(p.x, -1); assert_eq!(p.y, 0);
+
+    let p = SparseMatrix::spiral_to_point(7);
+    assert_eq!(p.x, -1); assert_eq!(p.y, -1);
+
+    let p = SparseMatrix::spiral_to_point(8);
+    assert_eq!(p.x, 0); assert_eq!(p.y, -1);
+
+    let p = SparseMatrix::spiral_to_point(9);
+    assert_eq!(p.x, 1); assert_eq!(p.y, -1);
+
+    let p = SparseMatrix::spiral_to_point(10);
+    assert_eq!(p.x, 2); assert_eq!(p.y, -1);
+
+    let p = SparseMatrix::spiral_to_point(11);
+    assert_eq!(p.x, 2); assert_eq!(p.y, 0);
+
+    let p = SparseMatrix::spiral_to_point(18);
+    assert_eq!(p.x, -2); assert_eq!(p.y, 1);
+
+    let p = SparseMatrix::spiral_to_point(20);
+    assert_eq!(p.x, -2); assert_eq!(p.y, -1);
+  }
+}
