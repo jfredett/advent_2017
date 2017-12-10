@@ -13,15 +13,38 @@ fn main() {
   file.read_to_string(&mut content).expect("Something went wrong reading input file");
 
   part1(&content);
+  part2(&content);
 }
 
 fn part1(input: &String) {
-  let mut c = Circular::new((0..256).collect());
+  let mut c = Circular::new((0..255).collect());
   for shift_str in input.trim().split(',') {
     let shift = parse_as::<usize>(&String::from(shift_str));
     c.reverse_and_skip(shift);
   }
-  println!("Part 1: {}", c.get(0) * c.get(1));
+  println!("Part 1: {}", c.get(0) as i32 * c.get(1) as i32);
+}
+
+
+fn part2(input: &String) {
+  let mut v = vec![];
+  for i in 0..256 {
+    v.push(i as u8);
+  }
+  let mut c = Circular::new(v);
+  let mut parsed_input : Vec<u8> = input.trim().bytes().collect();
+  let mut appendage : Vec<u8> = vec![17,31,73,47,23];
+
+  parsed_input.append(&mut appendage);
+
+  for _ in 0..64 {
+    for shift in parsed_input.to_owned() {
+      c.reverse_and_skip(shift as usize);
+    }
+  }
+
+
+  println!("Part 2: {:?} -- Convert this to Hex by hand.", c.condense());
 }
 
 fn parse_as<T : FromStr>(input: &String) -> T {
@@ -34,15 +57,15 @@ fn parse_as<T : FromStr>(input: &String) -> T {
 
 
 #[derive(Debug,PartialEq,Eq)]
-struct Circular<T> {
-  content: Vec<T>,
+struct Circular {
+  content: Vec<u8>,
   skip: usize,
   pointer: usize
 }
 
 // every operation will rotate the list such that the next start point pointer is _always_ zero.
-impl<T : PartialEq + Eq + Clone> Circular<T> {
-  fn new(content: Vec<T>) -> Circular<T> {
+impl Circular {
+  fn new(content: Vec<u8>) -> Circular {
     return Circular {
       content: content,
       skip: 0,
@@ -63,11 +86,24 @@ impl<T : PartialEq + Eq + Clone> Circular<T> {
     self.skip += 1;
   }
 
-  pub fn get_pointer(&self) -> T {
+  pub fn condense(&self) -> Vec<u8> {
+    let mut out = vec![];
+    for i in 0..16 {
+      let mut chunk: u8 = 0;
+      for j in 0..16 {
+        chunk ^= self.content[i*16 + j] as u8;
+      }
+      out.push(chunk);
+    }
+
+    return out;
+  }
+
+  pub fn get_pointer(&self) -> u8 {
     return self.get(self.pointer);
   }
 
-  pub fn get(&self, idx: usize) -> T {
+  pub fn get(&self, idx: usize) -> u8 {
     let result = self.content[idx].to_owned();
     return result;
   }
@@ -75,6 +111,7 @@ impl<T : PartialEq + Eq + Clone> Circular<T> {
   fn size(&self) -> usize {
     return self.content.len();
   }
+
 }
 
 #[cfg(test)]
