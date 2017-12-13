@@ -3,5 +3,5 @@
 if [ "$2" = "--debug" ] ; then
   cargo build --bin $1 ; RUST_TEST_THREADS=1 rust-gdb target/debug/$1
 else
-  cargo run --bin $1
+  cargo run $2 --bin $1
 fi
