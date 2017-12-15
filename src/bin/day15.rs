@@ -16,6 +16,18 @@ fn main() {
     }
 
     println!("Part 1: {}", judge.score);
+
+    // reset
+    let mut judge = Judge::new(vec![
+                               Generator::new(722, 16807), //generator A
+                               Generator::new(354, 48271), //generator B
+    ]);
+
+    for _ in 0..5000000 {
+        judge.judge_part2_round();
+    }
+
+    println!("Part 2: {}", judge.score);
 }
 
 const MODULUS : u64 = 2147483647;
@@ -72,6 +84,30 @@ impl Judge {
         }
     }
 
+    pub fn judge_part2_round(&mut self) {
+        let mut lower_a = 0;
+        let mut lower_b = 0;
+
+        loop { 
+            self.gen_a.generate();
+            lower_a = self.gen_a.current_value;
+            if lower_a % 4 == 0 { break; }
+        }
+
+        loop { 
+            self.gen_b.generate();
+            lower_b = self.gen_b.current_value;
+            if lower_b % 8 == 0 { break; }
+        }
+
+        let lower_a = self.gen_a.current_value & MASK;
+        let lower_b = self.gen_b.current_value & MASK;
+
+        if lower_a == lower_b {
+            self.score += 1
+        }
+    }
+
 }
 
 #[cfg(test)]
@@ -90,5 +126,20 @@ mod tests {
         }
 
         assert_eq!(judge.score, 1);
+    }
+
+    #[test]
+    fn example_part2() {
+        let mut judge = Judge::new(vec![
+           Generator::new(65, 16807), //generator A
+           Generator::new(8921, 48271), //generator B
+        ]);
+
+
+        for _ in 0..5000000 {
+            judge.judge_part2_round();
+        }
+
+        assert_eq!(judge.score, 309);
     }
 }
