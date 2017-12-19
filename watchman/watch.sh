@@ -1,0 +1,17 @@
+watchman-make -p 'src/bin/day10.rs' -t 'test --bin day10' --make 'clear ; cargo' \
+-p 'src/bin/day11.rs' -t 'test --bin day11' --make 'clear ; cargo' \
+-p 'src/bin/day12.rs' -t 'test --bin day12' --make 'clear ; cargo' \
+-p 'src/bin/day13.rs' -t 'test --bin day13' --make 'clear ; cargo' \
+-p 'src/bin/day14.rs' -t 'test --bin day14' --make 'clear ; cargo' \
+-p 'src/bin/day15.rs' -t 'test --bin day15' --make 'clear ; cargo' \
+-p 'src/bin/day16.rs' -t 'test --bin day16' --make 'clear ; cargo' \
+-p 'src/bin/day1.rs' -t 'test --bin day1' --make 'clear ; cargo' \
+-p 'src/bin/day2.rs' -t 'test --bin day2' --make 'clear ; cargo' \
+-p 'src/bin/day3.rs' -t 'test --bin day3' --make 'clear ; cargo' \
+-p 'src/bin/day4.rs' -t 'test --bin day4' --make 'clear ; cargo' \
+-p 'src/bin/day5.rs' -t 'test --bin day5' --make 'clear ; cargo' \
+-p 'src/bin/day6.rs' -t 'test --bin day6' --make 'clear ; cargo' \
+-p 'src/bin/day7.rs' -t 'test --bin day7' --make 'clear ; cargo' \
+-p 'src/bin/day8.rs' -t 'test --bin day8' --make 'clear ; cargo' \
+-p 'src/bin/day9.rs' -t 'test --bin day9' --make 'clear ; cargo' \
+-p Cargo.toml -t update --make "clear ; cargo"
